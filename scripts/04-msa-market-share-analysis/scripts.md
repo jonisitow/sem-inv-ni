@@ -27,11 +27,11 @@ sns.set_palette("husl")
 ```
 
 ## 4.2. Cargar archivos fuente (Trademap)
-Nota: El script reconoce automáticamente las columnas de países y de valores por año, con cabeceras en español o en inglés. Si la detección no es concluyente, pedirá elegir las columnas por su número. Si el botón de subida no funciona, suba el archivo desde el panel de carpetas de Colab y escriba su nombre en NOMBRE_ARCHIVO.
-# ==============================================================
-# 4.2. CARGAR ARCHIVOS FUENTE (TRADE MAP)
+
+**Nota:** *El script reconoce automáticamente las columnas de países y de valores por año, con cabeceras en español o en inglés. Si la detección no es concluyente, pedirá elegir las columnas por su número. Si el botón de subida no funciona, suba el archivo desde el panel de carpetas de Colab y escriba su nombre en NOMBRE_ARCHIVO.*
+
+```
 # Detección flexible de columnas (español / inglés) + asignación manual
-# ==============================================================
 
 # Modo de asignación de columnas:
 #   "Automático" -> el script detecta las columnas y solo pregunta si no está seguro.
@@ -94,7 +94,7 @@ def _a_numero(serie):
     """Convierte a número; tolera separadores de miles en archivos exportados como texto."""
     if serie.dtype.kind in 'if':
         return serie.astype(float)
-    texto = serie.astype(str).str.replace(' ', '', regex=False).str.replace(' ', '', regex=False).str.strip()
+    texto = serie.astype(str).str.replace('\u00a0', '', regex=False).str.replace(' ', '', regex=False).str.strip()
     texto = texto.where(~texto.str.fullmatch(r'-?\d{1,3}(,\d{3})+'), texto.str.replace(',', '', regex=False))
     texto = texto.where(~texto.str.fullmatch(r'-?\d{1,3}(\.\d{3})+'), texto.str.replace('.', '', regex=False))
     return pd.to_numeric(texto, errors='coerce')
@@ -418,6 +418,8 @@ print(f"Países únicos: {df['partner_country'].nunique()}")
 print(f"Años disponibles: {sorted(df['year'].unique())}")
 print("\nPrimeros datos procesados:")
 print(df.head(10))
+```
+
 ## 4.3. Calcular Market Share, Ranking y aplicar filtros
 
 ```
@@ -475,10 +477,10 @@ for year in sorted(df['year'].unique()):
 
 ## 4.5. Generar Gráficos analíticos
 
-Nota: Al ejecutar la celda aparece un selector con tres paletas (Ejecutivo Clásico, Comercio Global y Corporativo Contemporáneo) y una opción personalizada para pegar el código CSS exportado de Coolors. Pulse Generar gráficos para aplicar la paleta a los cuatro gráficos. El código CSS no se ejecuta: solo se extraen los colores HEX.
-# ==============================================================
-# 4.5. GENERAR GRÁFICOS ANALÍTICOS (con selector de paleta de colores)
-# ==============================================================
+**Nota:** *Al ejecutar la celda aparece un selector con tres paletas (Ejecutivo Clásico, Comercio Global y Corporativo Contemporáneo) y una opción personalizada para pegar el código CSS exportado de [Coolors](https://coolors.co/). Pulse "Generar gráficos" para aplicar la paleta a los cuatro gráficos. El código CSS no se ejecuta: solo se extraen los colores HEX.*
+
+```
+# Gráficos analíticos con selector de paleta de colores
 import re
 import matplotlib.colors as mcolors
 
@@ -650,8 +652,10 @@ def generar_graficos(paleta):
                         fontsize=9, color=apoyo['texto'])
 
     # CAGR con valores
-    if 'growth_data' in globals() and growth_data['cagr'].notna().any():
-        serie_cagr = growth_data.set_index('partner_country')['cagr']
+    serie_cagr = None
+    if 'growth_data' in globals():
+        serie_cagr = growth_data.set_index('partner_country')['cagr'].replace([np.inf, -np.inf], np.nan)
+    if serie_cagr is not None and serie_cagr.notna().any():
         bars2 = serie_cagr.plot(kind='bar', ax=axes[1, 1], width=0.7,
                                 color=[color_pais[p] for p in serie_cagr.index],
                                 edgecolor=apoyo['borde_barra'], linewidth=1.5)
@@ -754,7 +758,16 @@ def _selector_por_texto():
             break
         print('   ⚠️ Opción no válida.')
     while True:
-        css = input('👉 Pegue el código CSS de la paleta y presione Enter: ') if nombre == OPCION_PERSONALIZADA else None
+        css = None
+        if nombre == OPCION_PERSONALIZADA:
+            print('👉 Pegue el código CSS de la paleta y presione Enter en una línea vacía para terminar:')
+            lineas = []
+            while True:
+                linea = input()
+                if not linea.strip():
+                    break
+                lineas.append(linea)
+            css = '\n'.join(lineas)
         try:
             paleta = construir_paleta(nombre, css)
             break
@@ -767,6 +780,7 @@ def _selector_por_texto():
 
 
 selector_de_paleta()
+```
 
 ## 4.6. Generar Insights estratégicos o "Descubrimientos relevantes" 
 
